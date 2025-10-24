@@ -2,30 +2,38 @@
 # Stage 1: 依赖安装
 FROM node:20-alpine AS deps
 
+# 安装必要的系统依赖
+RUN apk add --no-cache libc6-compat
+
 # 设置工作目录
 WORKDIR /app
 
 # 复制依赖配置文件
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 
-# 安装依赖
-RUN npm ci --only=production
+# 安装生产依赖
+RUN npm ci --omit=dev
 
 # Stage 2: 构建阶段
 FROM node:20-alpine AS builder
 
+# 安装必要的系统依赖
+RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
 
-# 复制依赖
-COPY --from=deps /app/node_modules ./node_modules
+# 复制依赖配置并安装所有依赖（包括 devDependencies）
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# 复制源代码
 COPY . .
 
 # 设置环境变量
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
 
-# 安装所有依赖（包括 devDependencies）并构建
-RUN npm install && npm run build
+# 构建应用
+RUN npm run build
 
 # Stage 3: 生产运行
 FROM node:20-alpine AS runner
