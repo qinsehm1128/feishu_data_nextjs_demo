@@ -22,6 +22,12 @@ export function validateSignature(
     return true;
   }
 
+  // Check if timestamp and nonce are present
+  if (!timestamp || !nonce) {
+    console.warn("Missing timestamp or nonce in headers");
+    return false;
+  }
+
   if (!secretKey) {
     console.warn("SECRET_KEY not configured, signature validation disabled");
     return true;
